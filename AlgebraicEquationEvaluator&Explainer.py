@@ -1,5 +1,44 @@
 step_number = 1
 # --- Functions ---
+def tokenize(expr):
+    tokens = []
+    i = 0
+
+    while i < len(expr):
+        ch = expr[i]
+
+        if ch.isspace():
+            i += 1
+            continue
+
+        if ch.isdigit():
+            num = ch
+            i += 1
+            while i < len(expr) and expr[i].isdigit():
+                num += expr[i]
+                i += 1
+            tokens.append(num)
+            continue
+
+        if ch == "√":
+            tokens.append("√")
+            i += 1
+            continue
+
+        if ch in "()":
+            tokens.append(ch)
+            i += 1
+            continue
+
+        if ch in "+-*/^":
+            tokens.append(ch)
+            i += 1
+            continue
+
+        raise ValueError(f"Unknown character: {ch}")
+
+    return tokens
+
 def addition_step(number1, number2):
     global step_number
     print(f"{step_number}. Add: {number1} and {number2}\n")
@@ -68,7 +107,7 @@ print("Possible symbols:\n"\
     "---------------------\n")
 print("Write an equation (e.g., 5 + 6 * 3 - 5 * 2): ")
 equation_str = input()
-equation_parts = equation_str.split()
+equation_parts = tokenize(equation_str)
 
 print("\n--- Here are the steps to solve an equation: ---\n")
 
