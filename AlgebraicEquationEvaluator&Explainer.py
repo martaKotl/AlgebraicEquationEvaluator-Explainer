@@ -1,5 +1,6 @@
 step_number = 1
-# --- Functions ---
+
+# --- Tokenizer ---
 def tokenize(expr):
     tokens = []
     i = 0
@@ -39,90 +40,120 @@ def tokenize(expr):
 
     return tokens
 
-def addition_step(number1, number2):
+
+# --- Step Functions ---
+def addition_step(n1, n2):
     global step_number
-    print(f"{step_number}. Add: {number1} and {number2}\n")
+    print(f"{step_number}. Add: {n1} and {n2}\n")
     step_number += 1
 
-def subtraction_step(number1, number2):
+def subtraction_step(n1, n2):
     global step_number
-    print(f"{step_number}. Subtract: {number1} and {number2}\n")
+    print(f"{step_number}. Subtract: {n1} and {n2}\n")
     step_number += 1
 
-def multiplication_step(number1, number2):
+def multiplication_step(n1, n2):
     global step_number
-    print(f"{step_number}. Multiply: {number1} and {number2}\n")
+    print(f"{step_number}. Multiply: {n1} and {n2}\n")
     step_number += 1
 
-def division_step(number1, number2):
+def division_step(n1, n2):
     global step_number
-    print(f"{step_number}. Divide: {number1} and {number2}\n")
+    print(f"{step_number}. Divide: {n1} and {n2}\n")
     step_number += 1
 
-def power_step(number1, number2):
+def power_step(n1, n2):
     global step_number
-    print(f"{step_number}. Power: {number1} ^ {number2}")
-    print("Definition: Multiply the base number (the one on the left)\n " \
-    "by itself x amount of times, where x is the exponent (the one on the right).\n")  
-    step_number += 1 
-
-def root_step(number):
-    global step_number
-    print(f"{step_number}. Square Root: √{number}")
-    print("Definition: A square root of a number x is a number y such that y^2 = x\n")
+    print(f"{step_number}. Power: {n1} ^ {n2}")
+    print("Definition: Multiply the base number (the one on the left)\n"
+          "by itself x amount of times, where x is the exponent (the one on the right).\n")
     step_number += 1
 
-# --- Helper Function ---
-def process_steps(equation_list, operator, function_to_call):
-    while operator in equation_list:
-        
-        i = equation_list.index(operator)
+def root_step(n):
+    global step_number
+    print(f"{step_number}. Square Root: √{n}")
+    print(f"Definition: A square root of a number x is a number y such that y^2 = x\n")
+    step_number += 1
 
-        if function_to_call == root_step:
-            num = equation_list[i+1]
-            function_to_call(num)
-            new_grouped_step = f"({operator}{num})"
-            equation_list[i] = new_grouped_step
-            equation_list.pop(i+1)
+
+# --- Operator Processing ---
+def process_steps(equation, op, fn):
+    while op in equation:
+
+        idx = equation.index(op)
+
+        if fn == root_step:
+            num = equation[idx + 1]
+            fn(num)
+            equation[idx] = f"(√{num})"
+            equation.pop(idx + 1)
 
         else:
-            num1 = equation_list[i-1]
-            num2 = equation_list[i+1]
-            function_to_call(num1, num2)
-            new_grouped_step = f"({num1} {operator} {num2})"
-            equation_list[i-1] = new_grouped_step
-            equation_list.pop(i)
-            equation_list.pop(i)
+            n1 = equation[idx - 1]
+            n2 = equation[idx + 1]
+            fn(n1, n2)
+            equation[idx - 1] = f"({n1} {op} {n2})"
+            equation.pop(idx)     
+            equation.pop(idx)     
 
-    return equation_list
+    return equation
+
+
+# --- Parenthesis Handling ---
+def solve_parentheses(tokens):
+    stack = []
+    i = 0
+
+    while i < len(tokens):
+        if tokens[i] == "(":
+            stack.append(i)
+
+        elif tokens[i] == ")":
+            start = stack.pop()
+            end = i
+            inside = tokens[start + 1:end]
+            result_list = solve_expression(inside)
+            grouped = result_list[0]
+            tokens = tokens[:start] + [grouped] + tokens[end + 1:]
+            return solve_parentheses(tokens)
+
+        i += 1
+
+    return tokens
+
+
+# --- Complete Solve Function ---
+def solve_expression(tokens):
+
+    tokens = solve_parentheses(tokens)
+    tokens = process_steps(tokens, "√", root_step)
+    tokens = process_steps(tokens, "^", power_step)
+    tokens = process_steps(tokens, "*", multiplication_step)
+    tokens = process_steps(tokens, "/", division_step)
+    tokens = process_steps(tokens, "+", addition_step)
+    tokens = process_steps(tokens, "-", subtraction_step)
+
+    return tokens
+
 
 # --- Main Program ---
-print("Possible symbols:\n"\
-    "   Addition: + \n" \
-    "   Subtraction: -\n" \
-    "   Division: /\n" \
-    "   Multipication: *\n" \
-    "   Power: ^\n" \
-    "   Square Root: √\n" \
-    "---------------------\n")
-print("Write an equation (e.g., 5 + 6 * 3 - 5 * 2): ")
-equation_str = input()
-equation_parts = tokenize(equation_str)
 
-print("\n--- Here are the steps to solve an equation: ---\n")
+if __name__ == "__main__":
+    print("Possible symbols:\n"
+        "   Addition: + \n"
+        "   Subtraction: -\n"
+        "   Division: /\n"
+        "   Multipication: *\n"
+        "   Power: ^\n"
+        "   Square Root: √\n"
+        "---------------------\n")
 
-equation_parts = process_steps(equation_parts, "√", root_step)
+    expr = input("Write an equation: ")
 
-equation_parts = process_steps(equation_parts, "^", power_step)
+    tokens = tokenize(expr)
 
-equation_parts = process_steps(equation_parts, "*", multiplication_step)
+    print("\n--- Steps ---\n")
+    result = solve_expression(tokens)
 
-equation_parts = process_steps(equation_parts, "/", division_step)
-
-equation_parts = process_steps(equation_parts, "+", addition_step)
-
-equation_parts = process_steps(equation_parts, "-", subtraction_step)
-
-
-print("--- All steps complete. ---")
-print(f"Final nested expression: {equation_parts[0]}\n")
+    print("--- All steps complete. ---")
+    print(f"Final nested expression: {result[0]}\n")
