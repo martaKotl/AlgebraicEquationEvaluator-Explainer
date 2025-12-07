@@ -15,7 +15,7 @@ def tokenize(expr):
         if ch.isdigit():
             num = ch
             i += 1
-            while i < len(expr) and expr[i].isdigit():
+            while i < len(expr) and (expr[i].isdigit() or expr[i] == '.'):
                 num += expr[i]
                 i += 1
             tokens.append(num)
@@ -26,12 +26,7 @@ def tokenize(expr):
             i += 1
             continue
 
-        if ch in "()":
-            tokens.append(ch)
-            i += 1
-            continue
-
-        if ch in "+-*/^":
+        if ch in "+-*/^()":
             tokens.append(ch)
             i += 1
             continue
@@ -85,7 +80,7 @@ def process_steps(equation, op, fn):
         if fn == root_step:
             num = equation[idx + 1]
             fn(num)
-            equation[idx] = f"(√{num})"
+            equation[idx] = f"√({num})"
             equation.pop(idx + 1)
 
         else:
