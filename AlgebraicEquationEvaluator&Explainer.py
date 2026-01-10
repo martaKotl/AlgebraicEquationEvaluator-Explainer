@@ -12,6 +12,14 @@ def tokenize(expr):
         if ch.isspace():
             i += 1
             continue
+        
+        if ch.isalpha():    #sin, cos, log
+            word = ""
+            while i < len(expr) and expr[i].isalpha():
+                word += expr[i]
+                i += 1
+            tokens.append(word)
+            continue
 
         if ch.isdigit():
             num = ch
@@ -98,6 +106,22 @@ def negation_step(n):
     print(f"{step_number}. Negation: -{n}")
     step_number += 1
 
+def sine_step(n):
+    global step_number
+    print(f"{step_number}. Sine: sin({n})")
+    step_number += 1
+
+def cosine_step(n):
+    global step_number
+    print(f"{step_number}. Cosine: cos({n})")
+    step_number += 1
+
+def log_step(n):
+    global step_number
+    print(f"{step_number}. Logarithm: log({n})")
+    print("Definition: The power to which a base (usually 10) must be raised to produce that number.\n")
+    step_number += 1
+
 
 # --- Operator Processing ---
 def process_steps(equation, op, fn):
@@ -105,10 +129,10 @@ def process_steps(equation, op, fn):
 
         idx = equation.index(op)
 
-        if fn == root_step:
+        if op in ["√", "sin", "cos", "log"]:
             num = equation[idx + 1]
             fn(num)
-            equation[idx] = f"√({num})"
+            equation[idx] = f"{op}({num})"
             equation.pop(idx + 1)
 
         else:
@@ -217,6 +241,9 @@ def solve_expression(tokens):
     tokens = process_factorial(tokens)
     tokens = process_negation(tokens)
 
+    tokens = process_steps(tokens, "sin", sine_step)
+    tokens = process_steps(tokens, "cos", cosine_step)
+    tokens = process_steps(tokens, "log", log_step)
     tokens = process_steps(tokens, "√", root_step)
     tokens = process_steps(tokens, "^", power_step)
     tokens = process_steps(tokens, "*", multiplication_step)
@@ -240,6 +267,9 @@ if __name__ == "__main__":
         "   Absolute Value: | |\n"
         "   Factorial: !\n"
         "   Unary Minus: -x\n"
+        "   Sine: sin(x)\n"
+        "   Cosine: cos(x)\n"
+        "   Logarithm: log(x)\n"
         "---------------------\n"
     )
 
