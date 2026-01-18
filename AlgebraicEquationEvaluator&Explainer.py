@@ -46,6 +46,48 @@ def tokenize(expr):
         raise ValueError(f"Unknown character: {ch}")
     return tokens
 
+# --- Syntax Analyzer ---
+
+def analyze_tokens(tokens):
+    """Inspects tokens for mathematical syntax errors before solving."""
+    if not tokens:
+        raise ValueError("The expression is empty.")
+
+    stack = []
+    pipe_count = 0
+    binary_ops = {"+", "*", "/", "^", ","} 
+    all_ops = {"+", "-", "*", "/", "^", "!", "√", ","}
+
+    for i, token in enumerate(tokens):
+        if token == "(" and i + 1 < len(tokens) and tokens[i+1] == ")":
+            raise ValueError("Empty parentheses '()' detected.")
+
+        if i == 0 and token in binary_ops:
+            raise ValueError(f"Expression cannot start with '{token}'.")
+        if i == len(tokens) - 1 and token in all_ops and token != "!":
+            raise ValueError(f"Expression cannot end with '{token}'.")
+
+        if token in binary_ops and i + 1 < len(tokens):
+            if tokens[i+1] in binary_ops:
+                raise ValueError(f"Adjacent operators detected: '{token} {tokens[i+1]}'.")
+
+        if token == "(":
+            stack.append("(")
+        elif token == ")":
+            if not stack:
+                raise ValueError("Mismatched parentheses: closed ')' without opening.")
+            stack.pop()
+        
+        if token == "|":
+            pipe_count += 1
+
+    if stack:
+        raise ValueError("Mismatched parentheses: unclosed '('.")
+    if pipe_count % 2 != 0:
+        raise ValueError("Mismatched absolute value bars '|'.")
+    
+    return True
+
 # --- Step Functions ---
 def addition_step(n1, n2):
     global step_number
@@ -244,7 +286,7 @@ def solve_parentheses(tokens):
         i += 1
     return tokens
 
-# --- Complete Solve Function ---
+# --- Solve Function ---
 def solve_expression(tokens):
     tokens = process_unary_minus(tokens)
     tokens = process_integral(tokens)
@@ -276,15 +318,16 @@ TEXT_DIM = "#6B7280"
 BORDER = "#E5E7EB"        
 
 def make_canvas_scrollable(canvas, frame):
-    """Adds mousewheel support to a canvas and its internal frame."""
+    """Adds mousewheel support only if the content exceeds the window height."""
     frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
     
     def _on_mousewheel(event):
-        if event.delta:
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-        else:
-            if event.num == 4: canvas.yview_scroll(-1, "units")
-            elif event.num == 5: canvas.yview_scroll(1, "units")
+        if canvas.yview() != (0.0, 1.0):
+            if event.delta:
+                canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            else:
+                if event.num == 4: canvas.yview_scroll(-1, "units")
+                elif event.num == 5: canvas.yview_scroll(1, "units")
 
     canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", _on_mousewheel))
     canvas.bind("<Enter>", lambda e: canvas.bind_all("<Button-4>", _on_mousewheel), add="+")
@@ -292,7 +335,6 @@ def make_canvas_scrollable(canvas, frame):
     canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
     canvas.bind("<Leave>", lambda e: canvas.unbind_all("<Button-4>"), add="+")
     canvas.bind("<Leave>", lambda e: canvas.unbind_all("<Button-5>"), add="+")
-
 def run_gui():
     global output_callback, step_number
 
@@ -308,12 +350,12 @@ def run_gui():
         "light": {
             "bg": "#F8F9FA", "card": "#FFFFFF", "text": "#1F2937", 
             "dim": "#6B7280", "border": "#E5E7EB", "accent": "#4F46E5",
-            "result_bg": "#EEF2FF"
+            "result_bg": "#EEF2FF","error": "#DC2626"
         },
         "dark": {
             "bg": "#0F172A", "card": "#1E293B", "text": "#F1F5F9", 
             "dim": "#94A3B8", "border": "#334155", "accent": "#818CF8",
-            "result_bg": "#2D3748"
+            "result_bg": "#2D3748","error": "#F87171"
         }
     }
 
@@ -344,7 +386,7 @@ def run_gui():
     input_frame = tk.Frame(solver_tab, bg=current_colors["bg"])
     input_frame.pack(fill=tk.X, pady=(20, 10), padx=20)
 
-    lbl_input = tk.Label(input_frame, text="ENTER EQUATION", font=("Segoe UI", 14, "bold"), 
+    lbl_input = tk.Label(input_frame, text="ENTER EQUATION", font=("Segoe UI", 20, "bold"), 
                          fg=current_colors["accent"], bg=current_colors["bg"])
     lbl_input.pack(anchor="w", padx=20)
     
@@ -375,31 +417,41 @@ def run_gui():
         
         expr = entry.get()
         if not expr.strip(): return
+        
+        colors = themes["dark" if dark_mode.get() else "light"]
 
         try:
             tokens = tokenize(expr)
+            analyze_tokens(tokens)
             result = solve_expression(tokens)
-            colors = themes["dark" if dark_mode.get() else "light"]
             
-            res_header = tk.Label(steps_frame, text="FINAL RESULT", font=("Segoe UI", 14, "bold"), 
-                                 bg=colors["bg"], fg=colors["accent"], name="result_header")
+            res_header = tk.Label(steps_frame, text="FINAL RESULT", font=("Segoe UI", 20, "bold"), 
+                                bg=colors["bg"], fg=colors["accent"], name="result_header")
             res_header.pack(anchor="w", padx=20, pady=(30, 5))
             
             f_card = tk.Frame(steps_frame, bg=colors["result_bg"], padx=20, pady=20, 
-                             highlightthickness=1, highlightbackground=colors["accent"], name="result_card")
+                            highlightthickness=1, highlightbackground=colors["accent"], name="result_card")
             f_card.pack(fill=tk.X, pady=(0, 60)) 
             
             res_label = tk.Label(f_card, text=result[0], font=("Consolas", 18, "bold"), 
                                 bg=colors["result_bg"], fg=colors["text"], justify="left", anchor="w")
             res_label.pack(anchor="w", fill=tk.X)
             
-            f_card.bind("<Configure>", lambda e, lbl=res_label: lbl.configure(wraplength=e.width-50))
-            
-            steps_frame.update_idletasks()
-            steps_canvas.configure(scrollregion=steps_canvas.bbox("all"))
-            steps_canvas.yview_moveto(0.0) 
         except Exception as e:
-            output_callback(f"Error: {e}")
+            for widget in steps_frame.winfo_children(): widget.destroy()
+            
+            err_card = tk.Frame(steps_frame, bg=colors["card"], padx=20, pady=20, 
+                               highlightthickness=2, highlightbackground=colors["error"], name="error_card")
+            err_card.pack(fill=tk.X, pady=40, padx=20)
+            
+            tk.Label(err_card, text="SYNTAX ERROR", font=("Segoe UI", 14, "bold"), 
+                    fg=colors["error"], bg=colors["card"]).pack(anchor="w")
+            
+            tk.Label(err_card, text=str(e), font=("Consolas", 12), 
+                    fg=colors["text"], bg=colors["card"], wraplength=600, justify="left").pack(anchor="w", pady=(10, 0))
+        steps_frame.update_idletasks()
+        steps_canvas.configure(scrollregion=steps_canvas.bbox("all"))
+        steps_canvas.yview_moveto(0.0)
 
     btn_solve = tk.Button(input_frame, text="Solve Equation", bg=current_colors["accent"], fg="white", 
                           font=("Segoe UI", 10, "bold"), bd=0, cursor="hand2", 
@@ -412,7 +464,7 @@ def run_gui():
     settings_tab = tk.Frame(notebook, bg=current_colors["bg"])
     notebook.add(settings_tab, text="  SETTINGS  ")
 
-    settings_header = tk.Label(settings_tab, text="APP SETTINGS", font=("Segoe UI", 14, "bold"), 
+    settings_header = tk.Label(settings_tab, text="APP SETTINGS", font=("Segoe UI", 20, "bold"), 
                                fg=current_colors["accent"], bg=current_colors["bg"])
     settings_header.pack(anchor="w", padx=60, pady=(20, 5))
 
@@ -423,7 +475,7 @@ def run_gui():
     def create_toggle(parent, text, variable, command=None):
         container = tk.Frame(parent, bg=parent["bg"])
         container.pack(anchor="w", pady=12, fill="x")
-        lbl = tk.Label(container, text=text, font=("Segoe UI", 11), fg=current_colors["text"], bg=container["bg"])
+        lbl = tk.Label(container, text=text, font=("Segoe UI", 14), fg=current_colors["text"], bg=container["bg"])
         lbl.pack(side="left")
         canvas = tk.Canvas(container, width=50, height=26, bg=container["bg"], highlightthickness=0)
         canvas.pack(side="right")
@@ -456,10 +508,10 @@ def run_gui():
         draw()
 
     # =========================
-    # TAB 3: INFO (Formalized)
+    # TAB 3: INFO 
     # =========================
     info_tab = tk.Frame(notebook, bg=current_colors["bg"])
-    notebook.add(info_tab, text="  INFO  ")
+    notebook.add(info_tab, text="  ABOUT  ")
     info_canvas = tk.Canvas(info_tab, bg=current_colors["bg"], highlightthickness=0)
     info_scrollbar = ttk.Scrollbar(info_tab, orient="vertical", command=info_canvas.yview)
     info_frame = tk.Frame(info_canvas, bg=current_colors["bg"])
@@ -513,17 +565,20 @@ def run_gui():
         for widget in info_frame.winfo_children(): widget.destroy()
         colors = themes["dark" if dark_mode.get() else "light"]
         for title, content in info_sections:
-            tk.Label(info_frame, text=title.upper(), font=("Segoe UI", 11, "bold"), 
+            tk.Label(info_frame, text=title.upper(), font=("Segoe UI", 20, "bold"), 
                      bg=colors["bg"], fg=colors["accent"]).pack(padx=40, pady=(25, 5), anchor="w")
             
             card = tk.Frame(info_frame, bg=colors["card"], padx=25, pady=20, 
                             highlightthickness=1, highlightbackground=colors["border"])
             card.pack(fill=tk.X, padx=40, pady=5)
             
-            c_lbl = tk.Label(card, text=content, font=("Consolas", 10), bg=colors["card"], 
+            c_lbl = tk.Label(card, text=content, font=("Consolas", 14), bg=colors["card"], 
                              fg=colors["text"], justify="left", anchor="w")
             c_lbl.pack(fill=tk.X)
             card.bind("<Configure>", lambda e, l=c_lbl: l.configure(wraplength=e.width-50))
+        info_frame.update_idletasks() 
+        info_canvas.configure(scrollregion=info_canvas.bbox("all"))
+        info_canvas.yview_moveto(0) 
 
     populate_info()
 
@@ -549,19 +604,32 @@ def run_gui():
                     if isinstance(sub, tk.Label): sub.configure(bg=colors["card"], fg=colors["text"])
                     if isinstance(sub, tk.Canvas): sub.configure(bg=colors["card"])
 
-        for i, card in enumerate(steps_frame.winfo_children()):
+
+        for card in steps_frame.winfo_children():
+            if "error_card" in str(card):
+                card.destroy()
+                continue
+
             if "result_header" in str(card):
                 card.configure(bg=colors["bg"], fg=colors["accent"])
                 continue
+                
             is_result = "result_card" in str(card)
             bg_t = colors["result_bg"] if is_result else colors["card"]
-            card.configure(bg=bg_t, highlightbackground=colors["accent"] if is_result else colors["border"])
+            border_c = colors["accent"] if is_result else colors["border"]
+            
+            card.configure(bg=bg_t, highlightbackground=border_c)
+            
             for sub in card.winfo_children():
                 if isinstance(sub, tk.Label):
-                    txt = card_data[i] if i < len(card_data) else sub.cget("text")
-                    if "Definition:" in txt and not show_definitions.get():
-                        txt = txt.split("Definition:")[0].strip()
-                    sub.configure(text=txt, bg=bg_t, fg=colors["text"])
+                    full = getattr(sub, "full_text", sub.cget("text"))
+                    
+                    if "Definition:" in full and not show_definitions.get():
+                        new_text = full.split("Definition:")[0].strip()
+                    else:
+                        new_text = full
+                    
+                    sub.configure(text=new_text, bg=bg_t, fg=colors["text"])
 
         populate_info()
         show_definitions._draw_func()
@@ -580,7 +648,9 @@ def run_gui():
         card.pack(fill=tk.X, pady=8)
         
         lbl = tk.Label(card, text=disp, font=("Consolas", 12), bg=colors["card"], 
-                      fg=colors["text"], justify="left", anchor="w")
+                    fg=colors["text"], justify="left", anchor="w")
+        
+        lbl.full_text = text 
         
         lbl.pack(anchor="w", fill=tk.X)
         card.bind("<Configure>", lambda e, l=lbl: l.configure(wraplength=e.width-50))
