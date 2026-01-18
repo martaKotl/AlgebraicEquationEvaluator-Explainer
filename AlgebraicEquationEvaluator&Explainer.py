@@ -299,6 +299,7 @@ def run_gui():
     root = tk.Tk()
     root.title("Math Step Solver")
     root.geometry("1000x800")
+    root.minsize(500, 600)
 
     show_definitions = tk.BooleanVar(value=True)
     dark_mode = tk.BooleanVar(value=False)
@@ -317,7 +318,6 @@ def run_gui():
     }
 
     current_colors = themes["light"]
-
     style = ttk.Style()
     style.theme_use('clam')
 
@@ -342,16 +342,16 @@ def run_gui():
     notebook.add(solver_tab, text="  SOLVER  ")
 
     input_frame = tk.Frame(solver_tab, bg=current_colors["bg"])
-    input_frame.pack(fill=tk.X, pady=20, padx=20)
+    input_frame.pack(fill=tk.X, pady=(20, 10), padx=20)
 
-    lbl_input = tk.Label(input_frame, text="ENTER EQUATION", font=("Segoe UI", 8, "bold"), 
+    lbl_input = tk.Label(input_frame, text="ENTER EQUATION", font=("Segoe UI", 14, "bold"), 
                          fg=current_colors["accent"], bg=current_colors["bg"])
-    lbl_input.pack(anchor="w")
+    lbl_input.pack(anchor="w", padx=20)
     
     entry = tk.Entry(input_frame, font=("Consolas", 14), bd=0, highlightthickness=1, 
                     highlightbackground=current_colors["border"], highlightcolor=current_colors["accent"], 
                     bg=current_colors["card"], fg=current_colors["text"])
-    entry.pack(fill=tk.X, pady=5, ipady=10)
+    entry.pack(fill=tk.X, pady=10, ipady=10, padx=20)
     entry.insert(0, "((3 + 2!) * √16) - (|(-4 + 1)| + sin(30) + int(0, 3, (x + 1)^2))")
 
     steps_canvas = tk.Canvas(solver_tab, bg=current_colors["bg"], highlightthickness=0)
@@ -365,7 +365,6 @@ def run_gui():
     steps_canvas.pack(side="left", fill="both", expand=True, padx=20)
 
     make_canvas_scrollable(steps_canvas, steps_frame)
-
     card_data = []
 
     def solve():
@@ -380,18 +379,21 @@ def run_gui():
         try:
             tokens = tokenize(expr)
             result = solve_expression(tokens)
-            
             colors = themes["dark" if dark_mode.get() else "light"]
+            
+            res_header = tk.Label(steps_frame, text="FINAL RESULT", font=("Segoe UI", 14, "bold"), 
+                                 bg=colors["bg"], fg=colors["accent"], name="result_header")
+            res_header.pack(anchor="w", padx=20, pady=(30, 5))
+            
             f_card = tk.Frame(steps_frame, bg=colors["result_bg"], padx=20, pady=20, 
                              highlightthickness=1, highlightbackground=colors["accent"], name="result_card")
-            f_card.pack(fill=tk.X, pady=(20, 60)) 
+            f_card.pack(fill=tk.X, pady=(0, 60)) 
             
-            tk.Label(f_card, text="FINAL RESULT PARANTHESISED", font=("Segoe UI", 8, "bold"), 
-                     bg=colors["result_bg"], fg=colors["accent"]).pack(anchor="w")
+            res_label = tk.Label(f_card, text=result[0], font=("Consolas", 18, "bold"), 
+                                bg=colors["result_bg"], fg=colors["text"], justify="left", anchor="w")
+            res_label.pack(anchor="w", fill=tk.X)
             
-            tk.Label(f_card, text=result[0], font=("Consolas", 18, "bold"), 
-                     bg=colors["result_bg"], fg=colors["text"], justify="left", 
-                     anchor="w", wraplength=850).pack(anchor="w")
+            f_card.bind("<Configure>", lambda e, lbl=res_label: lbl.configure(wraplength=e.width-50))
             
             steps_frame.update_idletasks()
             steps_canvas.configure(scrollregion=steps_canvas.bbox("all"))
@@ -402,7 +404,7 @@ def run_gui():
     btn_solve = tk.Button(input_frame, text="Solve Equation", bg=current_colors["accent"], fg="white", 
                           font=("Segoe UI", 10, "bold"), bd=0, cursor="hand2", 
                           padx=25, pady=10, command=solve)
-    btn_solve.pack(pady=10)
+    btn_solve.pack(pady=10, padx=20, anchor="w")
 
     # =========================
     # TAB 2: SETTINGS
@@ -410,21 +412,19 @@ def run_gui():
     settings_tab = tk.Frame(notebook, bg=current_colors["bg"])
     notebook.add(settings_tab, text="  SETTINGS  ")
 
+    settings_header = tk.Label(settings_tab, text="APP SETTINGS", font=("Segoe UI", 14, "bold"), 
+                               fg=current_colors["accent"], bg=current_colors["bg"])
+    settings_header.pack(anchor="w", padx=60, pady=(20, 5))
+
     settings_container = tk.Frame(settings_tab, bg=current_colors["card"], padx=30, pady=25, 
                                   highlightthickness=1, highlightbackground=current_colors["border"])
-    settings_container.pack(fill=tk.X, padx=40, pady=40)
-
-    settings_header = tk.Label(settings_container, text="APP SETTINGS", font=("Segoe UI", 12, "bold"), 
-                               fg=current_colors["text"], bg=current_colors["card"])
-    settings_header.pack(anchor="w", pady=(0, 20))
+    settings_container.pack(fill=tk.X, padx=40, pady=5)
 
     def create_toggle(parent, text, variable, command=None):
         container = tk.Frame(parent, bg=parent["bg"])
         container.pack(anchor="w", pady=12, fill="x")
-
         lbl = tk.Label(container, text=text, font=("Segoe UI", 11), fg=current_colors["text"], bg=container["bg"])
         lbl.pack(side="left")
-
         canvas = tk.Canvas(container, width=50, height=26, bg=container["bg"], highlightthickness=0)
         canvas.pack(side="right")
 
@@ -455,62 +455,11 @@ def run_gui():
         variable._draw_func = draw
         draw()
 
-    def refresh_ui():
-        mode = "dark" if dark_mode.get() else "light"
-        colors = themes[mode]
-        
-        root.configure(bg=colors["bg"])
-        update_notebook_styles(colors)
-        for tab in [solver_tab, settings_tab, info_tab, input_frame, steps_frame, info_frame]:
-            tab.configure(bg=colors["bg"])
-        steps_canvas.configure(bg=colors["bg"])
-        info_canvas.configure(bg=colors["bg"])
-        
-        lbl_input.configure(bg=colors["bg"], fg=colors["accent"])
-        entry.configure(bg=colors["card"], fg=colors["text"], highlightbackground=colors["border"])
-        btn_solve.configure(bg=colors["accent"])
-
-        settings_container.configure(bg=colors["card"], highlightbackground=colors["border"])
-        settings_header.configure(bg=colors["card"], fg=colors["text"])
-        
-        for child in settings_container.winfo_children():
-            if isinstance(child, tk.Frame): 
-                child.configure(bg=colors["card"])
-                for sub_child in child.winfo_children():
-                    if isinstance(sub_child, tk.Label):
-                        sub_child.configure(bg=colors["card"], fg=colors["text"])
-                    if isinstance(sub_child, tk.Canvas):
-                        sub_child.configure(bg=colors["card"])
-
-        for i, card in enumerate(steps_frame.winfo_children()):
-            is_result = "result_card" in str(card)
-            bg_target = colors["result_bg"] if is_result else colors["card"]
-            border_target = colors["accent"] if is_result else colors["border"]
-            card.configure(bg=bg_target, highlightbackground=border_target)
-            for child in card.winfo_children():
-                if isinstance(child, tk.Label):
-                    if not child.cget("text") == "FINAL RESULT PARANTHESISED":
-                        full_text = card_data[i] if i < len(card_data) else child.cget("text")
-                        display_text = full_text
-                        if "Definition:" in full_text and not show_definitions.get():
-                            display_text = full_text.split("Definition:")[0].strip()
-                        child.configure(text=display_text, bg=bg_target, fg=colors["text"])
-                    else:
-                        child.configure(bg=bg_target, fg=colors["accent"])
-
-        populate_info()
-        show_definitions._draw_func()
-        dark_mode._draw_func()
-
-    create_toggle(settings_container, "Show Definitions", show_definitions, command=refresh_ui)
-    create_toggle(settings_container, "Dark Mode", dark_mode, command=refresh_ui)
-
     # =========================
-    # TAB 3: INFO
+    # TAB 3: INFO (Formalized)
     # =========================
     info_tab = tk.Frame(notebook, bg=current_colors["bg"])
     notebook.add(info_tab, text="  INFO  ")
-
     info_canvas = tk.Canvas(info_tab, bg=current_colors["bg"], highlightthickness=0)
     info_scrollbar = ttk.Scrollbar(info_tab, orient="vertical", command=info_canvas.yview)
     info_frame = tk.Frame(info_canvas, bg=current_colors["bg"])
@@ -522,40 +471,119 @@ def run_gui():
     make_canvas_scrollable(info_canvas, info_frame)
 
     info_sections = [
-        ("Supported Symbols", 
-         "Binary Operators:\n  + Addition\n  - Subtraction\n  * Multiplication\n  / Division\n  ^ Exponentiation\n\n"
-         "Unary Operators:\n  - Negation\n  ! Factorial\n  √ Root\n  sin, cos, log"),
-        ("Language Definition", 
-         "Order of operations:\n1. Parentheses\n2. Unary negation\n3. Integrals\n4. Absolute value\n"
-         "5. Factorial\n6. Unary functions\n7. Exponentiation\n8. MD\n9. AS")
+        ("Lexical Specification (Scanner)", 
+         "The scanner converts raw input strings into a stream of categorized tokens using the following character-class rules:\n"
+         "• <NUM>   : Digit string with optional decimal: [0-9]+(\\.[0-9]+)?\n"
+         "• <FUNC>  : Alphabetical identifier: [a-zA-Z]+ (Targets: sin, cos, log, int)\n"
+         "• <OP>    : Mathematical operators: { +, -, *, /, ^, !, √ }\n"
+         "• <DELIM> : Grouping/Parameter delimiters: { (, ), |, , }\n\n"
+         "Phase logic: Whitespace is consumed and discarded; unrecognized characters trigger a Lexical Error."),
+
+        ("Formal Grammar: BNF Definition", 
+         "This language is defined by a Context-Free Grammar (CFG) that enforces mathematical precedence:\n\n"
+         "<expression> ::= <term> { (+|-) <term> }\n"
+         "<term>       ::= <factor> { (*|/) <factor> }\n"
+         "<factor>     ::= <unary> [ ^ <factor> ]\n"
+         "<unary>      ::= [ - | √ ] <primary> | <primary> !\n"
+         "<primary>    ::= <number> \n"
+         "               | '(' <expression> ')' \n"
+         "               | '|' <expression> '|'\n"
+         "               | <FUNC> '(' <arg_list> ')'\n"
+         "<arg_list>   ::= <expression> { ',' <expression> }"),
+
+        ("Operator Precedence & Associativity", 
+         "The evaluator resolves operators in descending priority levels:\n"
+         "Level 7: ( ) | |           -> Grouping (Highest)\n"
+         "Level 6: sin cos log int   -> Functional Evaluation\n"
+         "Level 5: !                 -> Postfix Unary\n"
+         "Level 4: - √               -> Prefix Unary\n"
+         "Level 3: ^                 -> Exponentiation (Right-associative)\n"
+         "Level 2: * /               -> Multiplicative (Left-associative)\n"
+         "Level 1: + -               -> Additive (Left-associative)"),
+
+        ("Implementation Architecture", 
+         "The system utilizes a multi-stage evaluation pipeline:\n"
+         "1. Scanning: Linear character scan to produce a list of categorized objects.\n"
+         "2. Syntactic Analysis: Uses a recursive reduction method where nested scopes (parentheses) are extracted and evaluated independently.\n"
+         "3. Semantic Analysis: Definite integrals are resolved by parsing the 3-tuple parameter list into a distinct evaluation block.\n"
+         "4. Traceback: Every transformation is recorded and pushed to the UI callback for step-by-step visibility.")
     ]
 
     def populate_info():
         for widget in info_frame.winfo_children(): widget.destroy()
         colors = themes["dark" if dark_mode.get() else "light"]
         for title, content in info_sections:
-            tk.Label(info_frame, text=title, font=("Segoe UI", 14, "bold"), 
-                     bg=colors["bg"], fg=colors["text"]).pack(padx=40, pady=(20, 5), anchor="w")
+            tk.Label(info_frame, text=title.upper(), font=("Segoe UI", 11, "bold"), 
+                     bg=colors["bg"], fg=colors["accent"]).pack(padx=40, pady=(25, 5), anchor="w")
+            
             card = tk.Frame(info_frame, bg=colors["card"], padx=25, pady=20, 
                             highlightthickness=1, highlightbackground=colors["border"])
             card.pack(fill=tk.X, padx=40, pady=5)
-            tk.Label(card, text=content, font=("Consolas", 11), bg=colors["card"], 
-                     fg=colors["text"], justify="left", anchor="w").pack(fill=tk.X)
+            
+            c_lbl = tk.Label(card, text=content, font=("Consolas", 10), bg=colors["card"], 
+                             fg=colors["text"], justify="left", anchor="w")
+            c_lbl.pack(fill=tk.X)
+            card.bind("<Configure>", lambda e, l=c_lbl: l.configure(wraplength=e.width-50))
 
     populate_info()
 
-    def gui_output(text):
-        card_data.append(text) 
-        display_text = text
-        if "Definition:" in text and not show_definitions.get():
-            display_text = text.split("Definition:")[0].strip()
+    def refresh_ui():
         mode = "dark" if dark_mode.get() else "light"
         colors = themes[mode]
+        root.configure(bg=colors["bg"])
+        update_notebook_styles(colors)
+        for tab in [solver_tab, settings_tab, info_tab, input_frame, steps_frame, info_frame]:
+            tab.configure(bg=colors["bg"])
+        steps_canvas.configure(bg=colors["bg"])
+        info_canvas.configure(bg=colors["bg"])
+        lbl_input.configure(bg=colors["bg"], fg=colors["accent"])
+        entry.configure(bg=colors["card"], fg=colors["text"], highlightbackground=colors["border"])
+        btn_solve.configure(bg=colors["accent"])
+        settings_container.configure(bg=colors["card"], highlightbackground=colors["border"])
+        settings_header.configure(bg=colors["bg"], fg=colors["accent"])
+
+        for child in settings_container.winfo_children():
+            if isinstance(child, tk.Frame): 
+                child.configure(bg=colors["card"])
+                for sub in child.winfo_children():
+                    if isinstance(sub, tk.Label): sub.configure(bg=colors["card"], fg=colors["text"])
+                    if isinstance(sub, tk.Canvas): sub.configure(bg=colors["card"])
+
+        for i, card in enumerate(steps_frame.winfo_children()):
+            if "result_header" in str(card):
+                card.configure(bg=colors["bg"], fg=colors["accent"])
+                continue
+            is_result = "result_card" in str(card)
+            bg_t = colors["result_bg"] if is_result else colors["card"]
+            card.configure(bg=bg_t, highlightbackground=colors["accent"] if is_result else colors["border"])
+            for sub in card.winfo_children():
+                if isinstance(sub, tk.Label):
+                    txt = card_data[i] if i < len(card_data) else sub.cget("text")
+                    if "Definition:" in txt and not show_definitions.get():
+                        txt = txt.split("Definition:")[0].strip()
+                    sub.configure(text=txt, bg=bg_t, fg=colors["text"])
+
+        populate_info()
+        show_definitions._draw_func()
+        dark_mode._draw_func()
+
+    create_toggle(settings_container, "Show Definitions", show_definitions, command=refresh_ui)
+    create_toggle(settings_container, "Dark Mode", dark_mode, command=refresh_ui)
+
+    def gui_output(text):
+        card_data.append(text) 
+        disp = text.split("Definition:")[0].strip() if "Definition:" in text and not show_definitions.get() else text
+        colors = themes["dark" if dark_mode.get() else "light"]
+        
         card = tk.Frame(steps_frame, bg=colors["card"], padx=20, pady=15, 
                         highlightthickness=1, highlightbackground=colors["border"])
         card.pack(fill=tk.X, pady=8)
-        tk.Label(card, text=display_text, font=("Consolas", 12), bg=colors["card"], 
-                 fg=colors["text"], justify="left", anchor="w", wraplength=850).pack(anchor="w")
+        
+        lbl = tk.Label(card, text=disp, font=("Consolas", 12), bg=colors["card"], 
+                      fg=colors["text"], justify="left", anchor="w")
+        
+        lbl.pack(anchor="w", fill=tk.X)
+        card.bind("<Configure>", lambda e, l=lbl: l.configure(wraplength=e.width-50))
         steps_frame.update_idletasks()
         steps_canvas.configure(scrollregion=steps_canvas.bbox("all"))
 
