@@ -80,7 +80,7 @@ Example:
     n1 = "3", op = "+", n2 = "4"
     → "(3 + 4)"
 
-## 3. Step Logging
+## 5. Step Logging
 
 Each operation in the expression (such as addition, subtraction, multiplication, etc.) has its own function that prints a step with definition like:
 
@@ -94,7 +94,7 @@ Each operation in the expression (such as addition, subtraction, multiplication,
 
 Instead of calculating the actual numeric answers, the program shows how the expression is built and simplified according to order of operations.
 
-# 4. Updates since last documentation
+# 3. Updates since last documentation
 
 ## New mathematical capabilities
 
@@ -135,7 +135,7 @@ Formal syntax analyzer to detect:
 - Usage examples
 - Implementation overview
 
-# 5. Conclusion
+# 4. Conclusion
 
 Math Step Solver is a educational tool, not a calculator.
 It prioritizes clarity, structure, and correctness in how mathematical expressions are processed and simplified.
