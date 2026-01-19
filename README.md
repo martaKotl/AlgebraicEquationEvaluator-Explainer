@@ -1,6 +1,6 @@
 # 1. Overview
 
-This program is an educational tool for learning mathematics. It breaks down calculations into clear, step-by-step operations. The program follows the standard order of operations and displays each step so learners can see exactly 
+Our program is a desktop application built with Python and Tkinter. It is an educational tool for learning mathematics. It breaks down calculations into clear, step-by-step operations. The program follows the standard order of operations and displays each step so learners can see exactly 
 how an expression is simplified.
 
 The system models the basic steps used when a computer processes a math expression:
@@ -8,6 +8,14 @@ The system models the basic steps used when a computer processes a math expressi
 - Figuring out grouped parts like parentheses
 - Working through each operation in the correct order
 - Rewriting the expression step by step until it is fully simplified
+
+## Key features:
+- Step-by-step symbolic simplification
+- Correct operator precedence handling
+- Support for unary, binary, and functional operators
+- Syntax validation with meaningful error messages
+- GUI with light/dark mode and scrollable steps
+- Optional mathematical definitions for each step
 
 # 2. System Architecture
 
@@ -17,16 +25,31 @@ The program operates in several phases:
 
 The *tokenize(expr)* function performs lexical analysis:
 - Reads the input character-by-character
-- Groups digits into multi-digit numbers
-- Identifies operators: + - * / ^ √
-- Recognizes parentheses: ( )
+- Ignores whitespace
+- Groups digits (and decimal points) into numeric tokens
+- Recognizes alphabetic identifiers (functions such as sin, cos, log, int)
+- Identifies operators: + - * / ^ ! √
+- Recognizes grouping and delimiters: ( ) | ,
+- Raises an error on unrecognized characters
 
 Output: A list of tokens, e.g.:
 
     "3 + 4 * (2 - 1)" 
     → ["3", "+", "4", "*", "(", "2", "-", "1", ")"]
 
-## 2. Handling Parentheses
+## 2. Syntax Analysis
+
+Before solving, the system validates expressions using analyze_tokens(). It detects following errors:
+- Empty expressions
+- Empty parentheses ()
+- Adjacent operators + *
+- Mismatched parentheses
+- Unbalanced |
+- Invalid operator placement
+
+Errors are displayed in a GUI error card.
+
+## 3. Handling Parentheses
 
 The *solve_parentheses(tokens)* performs a recursive search for the innermost parentheses pair.
 
@@ -36,13 +59,16 @@ For each pair:
 - Replace the parentheses region with the computed sub-expression
 - This models recursive descent parsing and mirrors how expression trees are built.
 
-## 3. Operator Precedence
+## 4. Operator Precedence
 
 Operators are processed in the following order:
-1. Square Root (√)
-2. Exponentiation (^)
-3. Multiplication and Division (*, /)
-4. Addition and Subtraction (+, -)
+1. **Grouping Operators** - Parentheses ( ) and Absolute Value | |
+2. **Functions** - sin(x), cos(x), log(x), int(lower, upper, expr)
+3. **Factorial** - Postfix factorial !
+4. **Unary Operators** - Unary minus -x and Square Root √x
+5. **Exponentiation** (^)
+6. **Multiplication and Division** (*, /)
+7. **Addition and Subtraction** (+, -)
 
 Each precedence level is evaluated by *process_steps(equation, op, fn)*. This function:
 - Searches for the operator in the token list
@@ -54,75 +80,67 @@ Example:
     n1 = "3", op = "+", n2 = "4"
     → "(3 + 4)"
 
-## 4. Step Logging
+## 3. Step Logging
 
-Each operation in the expression (such as addition, subtraction, multiplication, etc.) has its own function that prints a step like:
+Each operation in the expression (such as addition, subtraction, multiplication, etc.) has its own function that prints a step with definition like:
 
-    1. Add: n1 and n2
-    2. Multiply: n1 and n2
-
-or for more complex operations, it prints a step with explanation, like:
+    1. Add: 3 + 4
     
-    1. Square Root: √n
-    Definition: A square root of a number x is a number y such that y^2 = x\n
+    Definition: Combining two or more quantities into a single sum.
+
+    3. Square Root: √16
+
+    Definition: A square root of a number x is a number y such that y² = x.
 
 Instead of calculating the actual numeric answers, the program shows how the expression is built and simplified according to order of operations.
 
-# 3. Program Behavior
+# 4. Updates since last documentation
 
-When the program starts, it first displays a list of all the supported mathematical operations. Then, it asks the user to enter an expression.
+## New mathematical capabilities
 
-    Possible symbols:
-       Addition: + 
-       Subtraction: -
-       Division: /
-       Multipication: *
-       Power: ^
-       Square Root: √
-    ---------------------
-    
-    Write an equation:
-
-When the user enters an expression, they are presented with steps and final nested expression:
-
-    Write an equation: 3 * 4 - (2 ^ 5 - 7)
-    
-    --- Steps ---
-    
-    1. Power: 2 ^ 5
-    Definition: Multiply the base number (the one on the left)
-    by itself x amount of times, where x is the exponent (the one on the right).
-    
-    2. Subtract: (2 ^ 5) and 7
-    
-    3. Multiply: 3 and 4
-    
-    4. Subtract: (3 * 4) and ((2 ^ 5) - 7)
-    
-    --- All steps complete. ---
-    Final nested expression: ((3 * 4) - ((2 ^ 5) - 7))
-
-# 4. Possible Extensions
-
-**- Support More Unary Functions**
-
-Such as:
+- Unary minus handling (-5, (-x + 2))
+- Factorial operator (n!)
+- Absolute value bars (|x|)
 - sin(x)
 - cos(x)
 - log(x)
-- factorial (n!)
+- Definite integrals
 
-**- Add Floating-Point Support**
+## Floating-Point Support
 
-**- Add Evaluation Phase**
+## Improved Parsing & Validation
 
-Actually compute numeric results after building the AST.
-
-**- Add Error Handling**
-
-Detect:
+Formal syntax analyzer to detect:
+- Empty expressions
+- Adjacent operators
+- Invalid start/end tokens
 - Mismatched parentheses
-- Invalid operator combinations
-- Unexpected input sequences
+- Unbalanced absolute value bars
+- Explicit unary vs binary minus resolution
+- Recursive handling of nested expressions
 
-# 7. Conclusion
+## GUI Enhancements
+
+- Multi-tab interface with Solver, Settings and About section
+- Toggleable Dark Mode
+- Toggleable step definitions
+- Scrollable canvas for large expressions
+- Styled result and error cards
+
+## Built-In Documentation
+
+- Lexical specification
+- Grammar rules (BNF)
+- Operator precedence table
+- Usage examples
+- Implementation overview
+
+# 5. Conclusion
+
+Math Step Solver is a educational tool, not a calculator.
+It prioritizes clarity, structure, and correctness in how mathematical expressions are processed and simplified.
+
+This makes it ideal for:
+- Learning compiler concepts
+- Understanding operator precedence
+- Teaching step-based problem solving
