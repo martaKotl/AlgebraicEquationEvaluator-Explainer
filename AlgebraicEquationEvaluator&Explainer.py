@@ -341,7 +341,7 @@ def run_gui():
     root = tk.Tk()
     root.title("Math Step Solver")
     root.geometry("1000x800")
-    root.minsize(500, 600)
+    root.minsize(600, 700)
 
     show_definitions = tk.BooleanVar(value=True)
     dark_mode = tk.BooleanVar(value=False)
@@ -433,9 +433,23 @@ def run_gui():
                             highlightthickness=1, highlightbackground=colors["accent"], name="result_card")
             f_card.pack(fill=tk.X, pady=(0, 60)) 
             
-            res_label = tk.Label(f_card, text=result[0], font=("Consolas", 18, "bold"), 
-                                bg=colors["result_bg"], fg=colors["text"], justify="left", anchor="w")
+            res_label = tk.Label(
+                f_card,
+                text=result[0],
+                font=("Consolas", 18, "bold"),
+                bg=colors["result_bg"],
+                fg=colors["text"],
+                justify="left",
+                anchor="w",
+                wraplength=f_card.winfo_width()
+            )
             res_label.pack(anchor="w", fill=tk.X)
+
+            f_card.bind(
+                "<Configure>",
+                lambda e, lbl=res_label: lbl.configure(wraplength=e.width - 40)
+            )
+
             
         except Exception as e:
             for widget in steps_frame.winfo_children(): widget.destroy()
@@ -530,6 +544,55 @@ def run_gui():
          "• <OP>    : Mathematical operators: { +, -, *, /, ^, !, √ }\n"
          "• <DELIM> : Grouping/Parameter delimiters: { (, ), |, , }\n\n"
          "Phase logic: Whitespace is consumed and discarded; unrecognized characters trigger a Lexical Error."),
+        
+        
+        ("How to Write a Correct Expression",
+        "Your expression MUST follow the scanner rules exactly. Below are the correct writing conventions:\n\n"
+        "1. NUMBERS\n"
+        "   • Digits only (0-9)\n"
+        "   • Optional decimal point allowed\n"
+        "   • NO scientific notation\n"
+        "   ✓ 3, 4.2, 10\n"
+        "   ✗ 2e3, .5, 3.\n\n"
+        "2. OPERATORS\n"
+        "   Binary operators must have operands on BOTH sides:\n"
+        "   ✓ 3 + 4, 5 * 2\n"
+        "   ✗ +3, 4/\n\n"
+        "   Unary minus is allowed ONLY when:\n"
+        "   • At the start of an expression\n"
+        "   • After (, |, or another operator\n"
+        "   ✓ -5, (-3 + 2)\n\n"
+        "3. FUNCTIONS\n"
+        "   Functions MUST be written as identifiers followed by parentheses:\n"
+        "   ✓ sin(30)\n"
+        "   ✓ cos(45)\n"
+        "   ✓ log(10)\n"
+        "   ✗ sin 30\n\n"
+        "4. INTEGRALS\n"
+        "   Integral syntax:\n"
+        "   int(lower, upper, expression)\n\n"
+        "   ✓ int(0, 3, (x + 1)^2)\n"
+        "   ✗ int 0 3 x\n\n"
+        "5. ABSOLUTE VALUE\n"
+        "   Must use matching | symbols:\n"
+        "   ✓ | -5 |\n"
+        "   ✓ |(3 - 7)|\n"
+        "   ✗ |3 - 7\n\n"
+        "6. FACTORIAL\n"
+        "   Factorial applies ONLY to the value directly before it:\n"
+        "   ✓ 5!\n"
+        "   ✓ (3 + 2)!\n"
+        "   ✗ !5\n\n"
+        "7. PARENTHESES\n"
+        "   • Must be balanced\n"
+        "   • Empty parentheses are NOT allowed\n"
+        "   ✓ (3 + 2)\n"
+        "   ✗ ()\n\n"
+        "8. INVALID CHARACTERS\n"
+        "   Letters mixed with digits are NOT allowed:\n"
+        "   ✗ x1, a2, sin30\n"
+        "   Only pure alphabetic identifiers are valid."
+    ),
 
         ("Formal Grammar: BNF Definition", 
          "This language is defined by a Context-Free Grammar (CFG) that enforces mathematical precedence:\n\n"
@@ -565,8 +628,22 @@ def run_gui():
         for widget in info_frame.winfo_children(): widget.destroy()
         colors = themes["dark" if dark_mode.get() else "light"]
         for title, content in info_sections:
-            tk.Label(info_frame, text=title.upper(), font=("Segoe UI", 20, "bold"), 
-                     bg=colors["bg"], fg=colors["accent"]).pack(padx=40, pady=(25, 5), anchor="w")
+            header = tk.Label(
+                info_frame,
+                text=title.upper(),
+                font=("Segoe UI", 20, "bold"),
+                bg=colors["bg"],
+                fg=colors["accent"],
+                justify="left",
+                anchor="w"
+            )
+            header.pack(padx=40, pady=(25, 5), anchor="w", fill=tk.X)
+
+            header.bind(
+                "<Configure>",
+                lambda e, lbl=header: lbl.configure(wraplength=e.width - 80)
+            )
+
             
             card = tk.Frame(info_frame, bg=colors["card"], padx=25, pady=20, 
                             highlightthickness=1, highlightbackground=colors["border"])
