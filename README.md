@@ -1,3 +1,6 @@
+# Authors
+Marta Kotłowska, Krzysztof Kozak, Alicja Musik
+
 # 1. Overview
 
 Our program is a desktop application built with Python and Tkinter. It is an educational tool for learning mathematics. It breaks down calculations into clear, step-by-step operations. The program follows the standard order of operations and displays each step so learners can see exactly 
